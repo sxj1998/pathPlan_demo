@@ -1,16 +1,11 @@
 #include "draw_map.hpp"
+#include <unistd.h>
 
 int main() {
     DrawMap mapDrawer;
-    mapDrawer.ClearMapInit(50, 50);  // 初始化地图大小
-
-    // 设置鼠标回调
-    mapDrawer.setMapCallback("Interactive Map");
-
-    // 启动线程处理地图显示和保存
     mapDrawer.mapDrawThreadStart();
-
-    mapDrawer.saveBinaryMapToVectorAndPrint();
-
+    while (true) {
+        sleep(1);
+    }
     return 0;
 }

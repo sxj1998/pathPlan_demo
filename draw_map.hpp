@@ -36,6 +36,8 @@ public:
     void setMapCallback(const string& windowName);
     void mapDrawerThread(void); 
     void mapDrawThreadStart(void);
+    void drawPath(const vector<pair<int, int>>& path);
+    void findAndDrawPath(Point start, Point end);
 };
 
 
