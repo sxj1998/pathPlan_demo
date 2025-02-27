@@ -17,6 +17,7 @@ typedef struct {
 class DrawMap {
 private:
     Mat gray_map;
+    std::vector<std::vector<int>> binary_save_map;
     bool drawing_flag;
     bool erasing_flag;
     Point start_point;

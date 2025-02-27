@@ -51,26 +51,35 @@ Mat DrawMap::getMap(void) {
 }
 
 void DrawMap::saveBinaryMapToVectorAndPrint() {
-    Mat binary_map;
-    // 将地图二值化，阈值设置为 128，低于128的像素设置为255（白色），高于128的像素设置为0（黑色）
-    threshold(gray_map, binary_map, 128, 255, THRESH_BINARY);
+    Mat gray_image;
+    cvtColor(gray_map, gray_image, COLOR_BGR2GRAY); // 转换为单通道灰度图
 
-    // 打印二值化地图到 vector 中
-    vector<int> mapVector;
+    Mat binary_map;
+    threshold(gray_image, binary_map, 128, 255, THRESH_BINARY);
+
+    // 修复：先调整binary_save_map的大小
+    int rows = binary_map.rows;
+    int cols = binary_map.cols;
+    binary_save_map.clear();  // 清空原有数据
+    binary_save_map.resize(rows);
+    for (int i = 0; i < rows; ++i) {
+        binary_save_map[i].resize(cols);
+    }
+
     for (int i = 0; i < binary_map.rows; ++i) {
         for (int j = 0; j < binary_map.cols; ++j) {
             int pixel_value = binary_map.at<uchar>(i, j);
-            // 将 255（白色）转换为 0，0（黑色）转换为 1
-            mapVector.push_back(pixel_value == 255 ? 0 : 1);
+            // 将每个像素值存入二维 vector 中
+            binary_save_map[i][j] = (pixel_value == 255 ? 0 : 1);
         }
     }
 
-    // 打印二值化后的 vector
-    for (size_t i = 0; i < mapVector.size(); ++i) {
-        cout << mapVector[i] << " ";
-        if ((i + 1) % binary_map.cols == 0) {
-            cout << endl;
+    // 打印二值化后的二维 vector
+    for (size_t i = 0; i < binary_save_map.size(); ++i) {
+        for (size_t j = 0; j < binary_save_map[i].size(); ++j) {
+            cout << binary_save_map[i][j] << " ";
         }
+        cout << endl;
     }
 }
 
@@ -113,27 +122,27 @@ void DrawMap::drawPath(const vector<pair<int, int>>& path) {
 
 void DrawMap::findAndDrawPath(Point start, Point end) {
     // 将 OpenCV Mat 转换为二维数组
-    vector<vector<int>> mapData(gray_map.rows, vector<int>(gray_map.cols, 0));
-    for (int y = 0; y < gray_map.rows; ++y) {
-        for (int x = 0; x < gray_map.cols; ++x) {
-            if (gray_map.at<uchar>(y, x) == 0) {
-                mapData[y][x] = 1;  // 设置障碍物
-            }
-        }
-    }
+    // vector<vector<int>> mapData(gray_map.rows, vector<int>(gray_map.cols, 0));
+    // for (int y = 0; y < gray_map.rows; ++y) {
+    //     for (int x = 0; x < gray_map.cols; ++x) {
+    //         if (gray_map.at<uchar>(y, x) == 0) {
+    //             mapData[y][x] = 1;  // 设置障碍物
+    //         }
+    //     }
+    // }
 
-    AStar astar(mapData, {start.x, start.y}, {end.x, end.y});  // 使用A*算法
+    AStar astar(binary_save_map, {start.x, start.y}, {end.x, end.y});  // 使用A*算法
     vector<pair<int, int>> path = astar.findPath();  // 获取路径
     drawPath(path);  // 绘制路径
 }
 
 void DrawMap::mapDrawerThread(void) 
 {
-    ClearMapInit(20, 20);  // 初始化地图大小
+    ClearMapInit(10, 10);  // 初始化地图大小
     setMapCallback("Interactive Map");
 
     Point startPoint(1, 1);  // 假定起点 (5,5)
-    Point endPoint(19, 19);  // 假定终点 (45,45)
+    Point endPoint(9, 9);  // 假定终点 (45,45)
 
     while (true) {
         imshow("Interactive Map", getMap());  // 显示地图
@@ -148,6 +157,7 @@ void DrawMap::mapDrawerThread(void)
             exit(0);
             break;
         } else if (key == 'p') {
+            saveBinaryMapToVectorAndPrint();
             findAndDrawPath(startPoint, endPoint);  // 执行 A* 搜索并绘制路径
         }
     }
