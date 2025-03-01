@@ -115,7 +115,7 @@ void DrawMap::drawPath(const vector<pair<int, int>>& path) {
     }
 
     imshow("Interactive Map", gray_map);
-    waitKey(0);
+    waitKey(1);
 }
 
 void DrawMap::drawCowPath(const vector<pair<int, int>>& path) {
@@ -214,6 +214,8 @@ void DrawMap::mapDrawerThread(void)
             auto path = generateBoustrophedonPath();
             drawCowPath(path);
         }
+
+
     }
 }
 

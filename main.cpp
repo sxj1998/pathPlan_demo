@@ -4,8 +4,10 @@
 int main() {
     DrawMap mapDrawer;
     mapDrawer.mapDrawThreadStart();
-    while (true) {
-        sleep(1);
-    }
+    // while (true) {
+    //     sleep(1);
+    // }
     return 0;
 }
+
+
