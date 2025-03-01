@@ -19,7 +19,7 @@ find_package(Threads REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # 添加可执行文件
-add_executable(PathPlanning main.cpp draw_map.cpp)  # 替换为你的源文件名
+add_executable(PathPlanning main.cpp draw_map.cpp a_star.cpp)  # 替换为你的源文件名
 
 # 链接 OpenCV 库和线程库
 target_link_libraries(PathPlanning 

@@ -39,6 +39,9 @@ public:
     void mapDrawThreadStart(void);
     void drawPath(const vector<pair<int, int>>& path);
     void findAndDrawPath(Point start, Point end);
+
+    std::vector<std::pair<int, int>> generateBoustrophedonPath();
+    void drawCowPath(const vector<pair<int, int>>& path);
 };
 
 

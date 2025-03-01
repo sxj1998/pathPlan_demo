@@ -118,31 +118,81 @@ void DrawMap::drawPath(const vector<pair<int, int>>& path) {
     waitKey(0);
 }
 
+void DrawMap::drawCowPath(const vector<pair<int, int>>& path) {
+    Mat temp_map = gray_map.clone();  // 在临时地图上绘制
+    
+    for (size_t i = 0; i < path.size(); ++i) {
+        pair<int, int> p = path[i];
+        // 绘制路径线（连接相邻点）
+        if (i > 0) {
+            line(temp_map, 
+                Point(path[i-1].first, path[i-1].second),
+                Point(p.first, p.second),
+                Scalar(255, 0, 255),  // 紫色路径线
+                1);
+        }
+        // 绘制当前点
+        circle(temp_map, Point(p.first, p.second), 2, Scalar(0, 165, 255), -1);  // 橙色点
+    }
+
+    imshow("Interactive Map", temp_map);
+    waitKey(0);
+}
+
 
 
 void DrawMap::findAndDrawPath(Point start, Point end) {
-    // 将 OpenCV Mat 转换为二维数组
-    // vector<vector<int>> mapData(gray_map.rows, vector<int>(gray_map.cols, 0));
-    // for (int y = 0; y < gray_map.rows; ++y) {
-    //     for (int x = 0; x < gray_map.cols; ++x) {
-    //         if (gray_map.at<uchar>(y, x) == 0) {
-    //             mapData[y][x] = 1;  // 设置障碍物
-    //         }
-    //     }
-    // }
-
     AStar astar(binary_save_map, {start.x, start.y}, {end.x, end.y});  // 使用A*算法
     vector<pair<int, int>> path = astar.findPath();  // 获取路径
     drawPath(path);  // 绘制路径
 }
 
+// 在draw_map.cpp中添加实现：
+std::vector<std::pair<int, int>> DrawMap::generateBoustrophedonPath() {
+    std::vector<std::pair<int, int>> path;
+    if (binary_save_map.empty()) return path;
+
+    int rows = binary_save_map.size();
+    int cols = binary_save_map[0].size();
+    bool leftToRight = true;
+
+    for (int y = 0; y < rows; ++y) {
+        // 跳过完全障碍行
+        bool isObstacleRow = true;
+        for (int x = 0; x < cols; ++x) {
+            if (binary_save_map[y][x] == 0) {
+                isObstacleRow = false;
+                break;
+            }
+        }
+        if (isObstacleRow) continue;
+
+        // 生成当前行路径
+        if (leftToRight) {
+            for (int x = 0; x < cols; ++x) {
+                if (binary_save_map[y][x] == 0) {
+                    path.emplace_back(x, y);
+                }
+            }
+        } else {
+            for (int x = cols-1; x >= 0; --x) {
+                if (binary_save_map[y][x] == 0) {
+                    path.emplace_back(x, y);
+                }
+            }
+        }
+        leftToRight = !leftToRight;
+    }
+    return path;
+}
+
 void DrawMap::mapDrawerThread(void) 
 {
-    ClearMapInit(10, 10);  // 初始化地图大小
+    ClearMapInit(50, 50);  // 初始化地图大小
     setMapCallback("Interactive Map");
 
     Point startPoint(1, 1);  // 假定起点 (5,5)
-    Point endPoint(9, 9);  // 假定终点 (45,45)
+    Point endPoint(49, 49);  // 假定终点 (45,45)
 
     while (true) {
         imshow("Interactive Map", getMap());  // 显示地图
@@ -159,6 +209,10 @@ void DrawMap::mapDrawerThread(void)
         } else if (key == 'p') {
             saveBinaryMapToVectorAndPrint();
             findAndDrawPath(startPoint, endPoint);  // 执行 A* 搜索并绘制路径
+        }else if (key == 'b') {  // 新增牛耕法路径
+            saveBinaryMapToVectorAndPrint();
+            auto path = generateBoustrophedonPath();
+            drawCowPath(path);
         }
     }
 }
