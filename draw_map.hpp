@@ -24,7 +24,7 @@ private:
     MapDrawerSetting settings;
 public:
         // 构造函数中通过初始化列表初始化 settings
-    DrawMap() : settings{2} {  // lineThickness 默认初始化为 5
+    DrawMap() : settings{1} {  // lineThickness 默认初始化为 5
         // 可以在此处初始化其他成员
         drawing_flag = false;
         erasing_flag = false;
@@ -34,6 +34,7 @@ public:
     void saveMap(const string& filename);
     Mat getMap(void); 
     void saveBinaryMapToVectorAndPrint();
+    void fillEnclosedAreas(vector<vector<int>>& grid);
     void setMapCallback(const string& windowName);
     void mapDrawerThread(void); 
     void mapDrawThreadStart(void);

@@ -83,6 +83,63 @@ void DrawMap::saveBinaryMapToVectorAndPrint() {
     }
 }
 
+void DrawMap::fillEnclosedAreas(vector<vector<int>>& grid) {
+    if (grid.empty() || grid[0].empty()) return;
+    // 定义方向：上、右、下、左
+    const int dx[] = {-1, 0, 1, 0};
+    const int dy[] = {0, 1, 0, -1};
+    int rows = grid.size();
+    int cols = grid[0].size();
+    
+    // 标记矩阵：记录是否被访问过（边界连接的0）
+    vector<vector<bool>> visited(rows, vector<bool>(cols, false));
+    queue<pair<int, int>> q;
+
+    // Step 1: 标记所有边界上的0及其连通区域
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            // 只处理边界上的点
+            if ((i == 0 || i == rows - 1 || j == 0 || j == cols - 1) && grid[i][j] == 0 && !visited[i][j]) {
+                q.push({i, j});
+                visited[i][j] = true;
+                // std::cout << " pushed ( " << i << ","<< j << " )" << std::endl;
+                // BFS标记所有边界连接的0
+                while (!q.empty()) {
+                    auto [x, y] = q.front();
+                    q.pop();
+                    
+                    for (int d = 0; d < 4; ++d) {
+                        int nx = x + dx[d];
+                        int ny = y + dy[d];
+                        if (nx >= 0 && nx < rows && ny >= 0 && ny < cols && 
+                            grid[nx][ny] == 0 && !visited[nx][ny]) {
+                            visited[nx][ny] = true;
+                            q.push({nx, ny});
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Step 2: 将未被标记的内部0填充为1
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            if (grid[i][j] == 0 && !visited[i][j]) {
+                grid[i][j] = 1;
+            }
+        }
+    }
+    
+    std::cout << " 地图洪水填充后: " << std::endl;
+        // 打印二值化后的二维 vector
+    for (size_t i = 0; i < binary_save_map.size(); ++i) {
+        for (size_t j = 0; j < binary_save_map[i].size(); ++j) {
+            cout << binary_save_map[i][j] << " ";
+        }
+        cout << endl;
+    }
+}
 
 void DrawMap::setMapCallback(const string& windowName) {
     namedWindow(windowName, 0);
@@ -148,43 +205,6 @@ void DrawMap::findAndDrawPath(Point start, Point end) {
 }
 
 // 在draw_map.cpp中添加实现：
-std::vector<std::pair<int, int>> DrawMap::generateBoustrophedonPath() {
-    std::vector<std::pair<int, int>> path;
-    if (binary_save_map.empty()) return path;
-
-    int rows = binary_save_map.size();
-    int cols = binary_save_map[0].size();
-    bool leftToRight = true;
-
-    for (int y = 0; y < rows; ++y) {
-        // 跳过完全障碍行
-        bool isObstacleRow = true;
-        for (int x = 0; x < cols; ++x) {
-            if (binary_save_map[y][x] == 0) {
-                isObstacleRow = false;
-                break;
-            }
-        }
-        if (isObstacleRow) continue;
-
-        // 生成当前行路径
-        if (leftToRight) {
-            for (int x = 0; x < cols; ++x) {
-                if (binary_save_map[y][x] == 0) {
-                    path.emplace_back(x, y);
-                }
-            }
-        } else {
-            for (int x = cols-1; x >= 0; --x) {
-                if (binary_save_map[y][x] == 0) {
-                    path.emplace_back(x, y);
-                }
-            }
-        }
-        leftToRight = !leftToRight;
-    }
-    return path;
-}
 
 void DrawMap::mapDrawerThread(void) 
 {
@@ -211,8 +231,7 @@ void DrawMap::mapDrawerThread(void)
             findAndDrawPath(startPoint, endPoint);  // 执行 A* 搜索并绘制路径
         }else if (key == 'b') {  // 新增牛耕法路径
             saveBinaryMapToVectorAndPrint();
-            auto path = generateBoustrophedonPath();
-            drawCowPath(path);
+            fillEnclosedAreas(binary_save_map);
         }
 
 
