@@ -13,6 +13,15 @@ void DrawMap::ClearMapInit(int width, int height)
 }
 
 void DrawMap::mouseHandler(int event, int x, int y, int flags) {
+    if (event == EVENT_LBUTTONDOWN || event == EVENT_RBUTTONDOWN) {
+        // 清除区域显示相关状态
+        if (showRegionWindow) {
+            destroyWindow("BCD Regions");
+            showRegionWindow = false;
+            regionMap.clear();
+        }
+    }
+
     if (event == EVENT_LBUTTONDOWN) {
         drawing_flag = true;
         start_point = Point(x, y); // 记录起始点
@@ -205,6 +214,40 @@ void DrawMap::findAndDrawPath(Point start, Point end) {
     drawPath(path);  // 绘制路径
 }
 
+void DrawMap::updateRegionDisplay() {
+    if (regionMap.empty()) return;
+
+    // 创建基础显示图像
+    int rows = regionMap.size();
+    int cols = regionMap[0].size();
+    regionDisplay = Mat(rows, cols, CV_8UC3, Scalar(255, 255, 255));
+
+    // 预定义颜色表（可扩展）
+    const vector<Scalar> colors = {
+        Scalar(255, 0, 0),     // 蓝色
+        Scalar(0, 255, 0),     // 绿色
+        Scalar(0, 0, 255),     // 红色
+        Scalar(0, 255, 255),   // 黄色
+        Scalar(255, 0, 255),   // 品红
+        Scalar(255, 255, 0)    // 青色
+    };
+
+    // 填充区域颜色
+    for (int x = 0; x < rows; ++x) {
+        for (int y = 0; y < cols; ++y) {
+            const int regionId = regionMap[x][y].id;
+            if (regionId > 0) {
+                const Scalar color = colors[(regionId-1) % colors.size()];
+                regionDisplay.at<Vec3b>(x, y) = Vec3b(color[0], color[1], color[2]);
+            } else {
+                regionDisplay.at<Vec3b>(x, y) = Vec3b(0, 0, 0); // 障碍物显示黑色
+            }
+        }
+    }
+
+    // 放大显示（保持像素清晰）
+    resize(regionDisplay, regionDisplay, Size(), pixelScale, pixelScale, INTER_NEAREST);
+}
 // 在draw_map.cpp中添加实现：
 
 void DrawMap::mapDrawerThread(void) 
@@ -218,6 +261,11 @@ void DrawMap::mapDrawerThread(void)
 
     while (true) {
         imshow("Interactive Map", getMap());  // 显示地图
+
+        // 显示区域窗口（如果激活）
+        if (showRegionWindow && !regionDisplay.empty()) {
+            imshow("BCD Regions", regionDisplay);
+        }
 
         char key = waitKey(1);
         if (key == 's') {
@@ -235,7 +283,22 @@ void DrawMap::mapDrawerThread(void)
             BcdPlanner planner;
             saveBinaryMapToVectorAndPrint();
             fillEnclosedAreas(binary_save_map);
-            planner.BcdPlannerHandle(binary_save_map);
+            // 生成区域数据
+            regionMap = planner.BcdPlannerHandle(binary_save_map);
+            
+            // 准备显示数据
+            updateRegionDisplay();
+            showRegionWindow = true;
+            
+            // 创建独立窗口
+            namedWindow("BCD Regions", WINDOW_NORMAL);
+            moveWindow("BCD Regions", gray_map.cols + 50, 100); // 偏移显示位置
+        }
+
+        // ESC键关闭区域窗口
+        if (key == 27) { // ASCII 27 = ESC
+            destroyWindow("BCD Regions");
+            showRegionWindow = false;
         }
 
 
