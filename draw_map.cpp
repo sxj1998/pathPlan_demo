@@ -1,5 +1,6 @@
 #include "draw_map.hpp"
 #include "a_star.hpp"
+#include "bcd.hpp"
 
 
 
@@ -208,11 +209,12 @@ void DrawMap::findAndDrawPath(Point start, Point end) {
 
 void DrawMap::mapDrawerThread(void) 
 {
-    ClearMapInit(50, 50);  // 初始化地图大小
+    int map_h = 10, map_w = 10;
+    ClearMapInit(map_w, map_h);  // 初始化地图大小
     setMapCallback("Interactive Map");
 
     Point startPoint(1, 1);  // 假定起点 (5,5)
-    Point endPoint(49, 49);  // 假定终点 (45,45)
+    Point endPoint(map_w-1, map_h-1);  // 假定终点 (45,45)
 
     while (true) {
         imshow("Interactive Map", getMap());  // 显示地图
@@ -230,8 +232,10 @@ void DrawMap::mapDrawerThread(void)
             saveBinaryMapToVectorAndPrint();
             findAndDrawPath(startPoint, endPoint);  // 执行 A* 搜索并绘制路径
         }else if (key == 'b') {  // 新增牛耕法路径
+            BcdPlanner planner;
             saveBinaryMapToVectorAndPrint();
             fillEnclosedAreas(binary_save_map);
+            planner.BcdPlannerHandle(binary_save_map);
         }
 
 
